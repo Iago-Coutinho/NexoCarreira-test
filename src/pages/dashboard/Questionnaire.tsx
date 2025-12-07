@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send } from "lucide-react";
+import { analyzeViaGemini } from "@/integrations/gemini/api";
+
 
 const questions = [
   {
@@ -70,21 +72,18 @@ export default function Questionnaire() {
     setIsSubmitting(true);
 
     try {
-      // Format answers for AI
-      const formattedContent = questions.map(q => 
-        `${q.label}:\n${answers[q.id]}`
-      ).join('\n\n');
-
-      // Call edge function for AI analysis
-      const { data: analysisData, error: functionError } = await supabase.functions.invoke('analyze-assessment', {
-        body: { type: 'questionario', content: formattedContent }
+      const analysisData = await analyzeViaGemini({
+        answer1: answers.experiencia,
+        answer2: answers.habilidades_tecnicas,
+        answer3: answers.soft_skills,
+        answer4: answers.desafios,
+        objective: answers.objetivos,
       });
-
-      if (functionError) throw functionError;
-
+    
       if (!analysisData) {
         throw new Error('Nenhum resultado retornado pela análise');
       }
+
 
       // Save to database
       const { error: dbError } = await supabase
