@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send } from "lucide-react";
-import { analyzeViaGemini } from "@/integrations/gemini/api";
-
 
 const questions = [
   {
@@ -72,18 +70,25 @@ export default function Questionnaire() {
     setIsSubmitting(true);
 
     try {
-      const analysisData = await analyzeViaGemini({
-        answer1: answers.experiencia,
-        answer2: answers.habilidades_tecnicas,
-        answer3: answers.soft_skills,
-        answer4: answers.desafios,
-        objective: answers.objetivos,
+      // Format answers for AI
+      const formattedContent = questions.map(q => 
+        `${q.label}:\n${answers[q.id]}`
+      ).join('\n\n');
+
+      // Call the Supabase edge function backed by Gemini for AI analysis.
+      // This function resides in `supabase/functions/gemini-assessment/index.ts` and
+      // will forward the request to the Google Gemini API. It expects a
+      // `questionario` type and a `content` string with the formatted answers.
+      const { data: analysisData, error: functionError } = await supabase.functions.invoke('gemini-assessment', {
+        body: { type: 'questionario', content: formattedContent }
       });
-    
+
+      // Surface any errors returned by the function.
+      if (functionError) throw functionError;
+
       if (!analysisData) {
         throw new Error('Nenhum resultado retornado pela análise');
       }
-
 
       // Save to database
       const { error: dbError } = await supabase
