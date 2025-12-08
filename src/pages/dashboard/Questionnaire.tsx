@@ -75,15 +75,11 @@ export default function Questionnaire() {
         `${q.label}:\n${answers[q.id]}`
       ).join('\n\n');
 
-      // Call the Supabase edge function backed by Gemini for AI analysis.
-      // This function resides in `supabase/functions/gemini-assessment/index.ts` and
-      // will forward the request to the Google Gemini API. It expects a
-      // `questionario` type and a `content` string with the formatted answers.
-      const { data: analysisData, error: functionError } = await supabase.functions.invoke('gemini-assessment', {
+      // Call edge function for AI analysis
+      const { data: analysisData, error: functionError } = await supabase.functions.invoke('analyze-assessment', {
         body: { type: 'questionario', content: formattedContent }
       });
 
-      // Surface any errors returned by the function.
       if (functionError) throw functionError;
 
       if (!analysisData) {
